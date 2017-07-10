@@ -179,6 +179,11 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     private int mInitialPosition = -1;
     private int mHideControlsDuration = 2000; // defaults to 2 seconds.
 
+    private ScaleType mScaleType = ScaleType.CENTER_CROP;
+    public enum ScaleType {
+        CENTER_CROP, TOP, BOTTOM
+    }
+
 
     private void init(Context context, AttributeSet attrs) {
         setBackgroundColor(Color.BLACK);
@@ -993,27 +998,48 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     }
 
     private void adjustAspectRatio(int viewWidth, int viewHeight, int videoWidth, int videoHeight) {
-        final double aspectRatio = (double) videoHeight / videoWidth;
-        int newWidth, newHeight;
+        float scaleX = 1.0f;
+        float scaleY = 1.0f;
 
-        if (viewHeight > (int) (viewWidth * aspectRatio)) {
-            // limited by narrow width; restrict height
-            newWidth = viewWidth;
-            newHeight = (int) (viewWidth * aspectRatio);
-        } else {
-            // limited by short height; restrict width
-            newWidth = (int) (viewHeight / aspectRatio);
-            newHeight = viewHeight;
+        if (videoWidth > viewWidth && videoHeight > viewHeight) {
+            scaleX = videoWidth / viewWidth;
+            scaleY = videoHeight / viewHeight;
+        } else if (videoWidth < viewWidth && videoHeight < viewHeight) {
+            scaleY = viewWidth / videoWidth;
+            scaleX = viewHeight / videoHeight;
+        } else if (viewWidth > videoWidth) {
+            scaleY = (viewWidth / videoWidth) / (viewHeight / videoHeight);
+        } else if (viewHeight > videoHeight) {
+            scaleX = (viewHeight / videoHeight) / (viewWidth / videoWidth);
         }
 
-        final int xoff = (viewWidth - newWidth) / 2;
-        final int yoff = (viewHeight - newHeight) / 2;
+        // Calculate pivot points, in our case crop from center
+        int pivotPointX;
+        int pivotPointY;
 
-        final Matrix txform = new Matrix();
-        mTextureView.getTransform(txform);
-        txform.setScale((float) newWidth / viewWidth, (float) newHeight / viewHeight);
-        txform.postTranslate(xoff, yoff);
-        mTextureView.setTransform(txform);
+        switch (mScaleType) {
+            case TOP:
+                pivotPointX = 0;
+                pivotPointY = 0;
+                break;
+            case BOTTOM:
+                pivotPointX = (int) (viewWidth);
+                pivotPointY = (int) (viewHeight);
+                break;
+            case CENTER_CROP:
+                pivotPointX = (int) (viewWidth / 2);
+                pivotPointY = (int) (viewHeight / 2);
+                break;
+            default:
+                pivotPointX = (int) (viewWidth / 2);
+                pivotPointY = (int) (viewHeight / 2);
+                break;
+        }
+
+        Matrix matrix = new Matrix();
+        matrix.setScale(scaleX, scaleY, pivotPointX, pivotPointY);
+
+        mTextureView.setTransform(matrix);
     }
 
     private void throwError(Exception e) {
@@ -1227,4 +1253,12 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
                 mHandler.postDelayed(this, UPDATE_INTERVAL);
         }
     };
+
+    public ScaleType getScaleType() {
+        return mScaleType;
+    }
+
+    public void setScaleType(ScaleType mScaleType) {
+        this.mScaleType = mScaleType;
+    }
 }
