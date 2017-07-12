@@ -29,6 +29,7 @@ dependencies {
     compile 'org.adw.library:discrete-seekbar:1.0.1'
     compile 'com.devbrackets.android:exomedia:3.0.1'
     compile 'com.github.ybq:Android-SpinKit:1.1.0'
+    compile 'com.yqritc:android-scalablevideoview:1.0.4'
 }
 
 // build a jar with source files

@@ -58,6 +58,9 @@ import com.github.ybq.android.spinkit.style.Wave;
 import com.halilibo.bettervideoplayer.subtitle.CaptionsView;
 import com.halilibo.bettervideoplayer.utility.EmptyCallback;
 import com.halilibo.bettervideoplayer.utility.Util;
+import com.yqritc.scalablevideoview.ScalableType;
+import com.yqritc.scalablevideoview.ScaleManager;
+import com.yqritc.scalablevideoview.Size;
 
 import java.io.IOException;
 import java.lang.annotation.Retention;
@@ -179,10 +182,7 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     private int mInitialPosition = -1;
     private int mHideControlsDuration = 2000; // defaults to 2 seconds.
 
-    private ScaleType mScaleType = ScaleType.CENTER_CROP;
-    public enum ScaleType {
-        CENTER_CROP, TOP, BOTTOM
-    }
+    private ScalableType mScaleType = ScalableType.CENTER_CROP;
 
 
     private void init(Context context, AttributeSet attrs) {
@@ -998,48 +998,13 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     }
 
     private void adjustAspectRatio(int viewWidth, int viewHeight, int videoWidth, int videoHeight) {
-        float scaleX = 1.0f;
-        float scaleY = 1.0f;
-
-        if (videoWidth > viewWidth && videoHeight > viewHeight) {
-            scaleX = videoWidth / viewWidth;
-            scaleY = videoHeight / viewHeight;
-        } else if (videoWidth < viewWidth && videoHeight < viewHeight) {
-            scaleY = viewWidth / videoWidth;
-            scaleX = viewHeight / videoHeight;
-        } else if (viewWidth > videoWidth) {
-            scaleY = (viewWidth / videoWidth) / (viewHeight / videoHeight);
-        } else if (viewHeight > videoHeight) {
-            scaleX = (viewHeight / videoHeight) / (viewWidth / videoWidth);
+        Size viewSize = new Size(viewWidth, viewHeight);
+        Size videoSize = new Size(videoWidth, videoHeight);
+        ScaleManager scaleManager = new ScaleManager(viewSize, videoSize);
+        Matrix matrix = scaleManager.getScaleMatrix(mScaleType);
+        if (matrix != null) {
+            mTextureView.setTransform(matrix);
         }
-
-        // Calculate pivot points, in our case crop from center
-        int pivotPointX;
-        int pivotPointY;
-
-        switch (mScaleType) {
-            case TOP:
-                pivotPointX = 0;
-                pivotPointY = 0;
-                break;
-            case BOTTOM:
-                pivotPointX = (int) (viewWidth);
-                pivotPointY = (int) (viewHeight);
-                break;
-            case CENTER_CROP:
-                pivotPointX = (int) (viewWidth / 2);
-                pivotPointY = (int) (viewHeight / 2);
-                break;
-            default:
-                pivotPointX = (int) (viewWidth / 2);
-                pivotPointY = (int) (viewHeight / 2);
-                break;
-        }
-
-        Matrix matrix = new Matrix();
-        matrix.setScale(scaleX, scaleY, pivotPointX, pivotPointY);
-
-        mTextureView.setTransform(matrix);
     }
 
     private void throwError(Exception e) {
@@ -1254,11 +1219,11 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
         }
     };
 
-    public ScaleType getScaleType() {
+    public ScalableType getScaleType() {
         return mScaleType;
     }
 
-    public void setScaleType(ScaleType mScaleType) {
+    public void setScaleType(ScalableType mScaleType) {
         this.mScaleType = mScaleType;
     }
 }
